@@ -2,16 +2,47 @@ import numpy as np
 import math
 
 class SLAM:
-    def __init__(self, grid_width, grid_height):
-        self.grid = np.zeros((grid_width, grid_height))
+    def __init__(self, initial_grid_width, initial_grid_height):
+        # Start with an initial grid and keep track of boundaries
+        self.grid = np.zeros((initial_grid_width, initial_grid_height))
+        self.min_x, self.max_x = 0, initial_grid_width - 1
+        self.min_y, self.max_y = 0, initial_grid_height - 1
+
+    def expand_grid(self, new_min_x, new_max_x, new_min_y, new_max_y):
+        """Expands the grid when the robot explores beyond the current boundaries."""
+        # Calculate new grid dimensions
+        new_width = new_max_x - new_min_x + 1
+        new_height = new_max_y - new_min_y + 1
+
+        # Create a new grid with the new dimensions and fill it with unexplored space (0)
+        new_grid = np.zeros((new_width, new_height))
+
+        # Copy the old grid into the new one, with adjusted coordinates
+        old_width, old_height = self.grid.shape
+        new_grid[(self.min_x - new_min_x):(self.min_x - new_min_x + old_width),
+                 (self.min_y - new_min_y):(self.min_y - new_min_y + old_height)] = self.grid
+
+        # Update grid and boundaries
+        self.grid = new_grid
+        self.min_x, self.max_x = new_min_x, new_max_x
+        self.min_y, self.max_y = new_min_y, new_max_y
 
     def update(self, position, angle, sensor_data, max_sensor_range=200):
+        # Convert position to grid indices
         grid_x = int(position[0] // 10)
         grid_y = int(position[1] // 10)
 
-        # Ensure grid_x and grid_y are within bounds
-        grid_x = max(0, min(grid_x, self.grid.shape[0] - 1))
-        grid_y = max(0, min(grid_y, self.grid.shape[1] - 1))
+        # Check if we need to expand the grid
+        if grid_x < self.min_x or grid_x > self.max_x or grid_y < self.min_y or grid_y > self.max_y:
+            new_min_x = min(self.min_x, grid_x - 1)
+            new_max_x = max(self.max_x, grid_x + 1)
+            new_min_y = min(self.min_y, grid_y - 1)
+            new_max_y = max(self.max_y, grid_y + 1)
+            self.expand_grid(new_min_x, new_max_x, new_min_y, new_max_y)
+
+        # Adjust coordinates after expansion
+        grid_x = grid_x - self.min_x
+        grid_y = grid_y - self.min_y
 
         # Mark the robot's current position as explored
         self.grid[grid_x, grid_y] = 1
