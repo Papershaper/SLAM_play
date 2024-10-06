@@ -28,7 +28,8 @@ BACKGROUND_COLOR = (0, 0, 0)  # Black for map background
 UI_BACKGROUND_COLOR = (50, 50, 50)  # Darker grey for UI section
 TEXT_COLOR = (255, 255, 255)  # White text for telemetry
 CLEAR_SPACE_COLOR = (128, 128, 128)  # Grey for clear space
-OBSTACLE_COLOR = (0, 255, 0)  # Green for obstacles
+OBSTACLE_FIRST_DETECTED_COLOR = (255, 255, 0)  # Yellow for first detection of obstacle
+OBSTACLE_CONFIRMED_COLOR = (0, 255, 0)  # Green for confirmed obstacles
 FRONTIER_COLOR = (64, 64, 64)  # Dark grey for frontier
 ROBOT_COLOR = (0, 0, 255)  # Blue for robot
 PATH_COLOR = (255, 255, 255)  # White for path
@@ -69,7 +70,7 @@ while running:
     telemetry_text = font.render(f"Angle: {robot.angle:.2f}° | Position: ({int(robot.position[0])}, {int(robot.position[1])})", True, TEXT_COLOR)
     screen.blit(telemetry_text, (10, 50))
 
-    # Draw the robot's path using the real-world positions (offset by the UI height)
+    # Track robot's path (append to the path array)
     path_points.append((robot.position[0], robot.position[1]))
 
     # Centering: Keep the robot centered in the map area
@@ -90,8 +91,15 @@ while running:
             if rect_y > UI_HEIGHT:  # Ensure map is drawn below the UI section
                 if slam_map[x, y] == 1:  # Clear space (grey)
                     pygame.draw.rect(screen, CLEAR_SPACE_COLOR, pygame.Rect(rect_x, rect_y, 10, 10), 1)
-                elif slam_map[x, y] == 2:  # Obstacle (green)
-                    pygame.draw.rect(screen, OBSTACLE_COLOR, pygame.Rect(rect_x, rect_y, 10, 10))
+                elif slam_map[x, y] == 2:  # First detected obstacle (yellow)
+                    pygame.draw.rect(screen, OBSTACLE_FIRST_DETECTED_COLOR, pygame.Rect(rect_x, rect_y, 10, 10))
+                elif slam_map[x, y] == 3:  # Confirmed obstacle (green)
+                    pygame.draw.rect(screen, OBSTACLE_CONFIRMED_COLOR, pygame.Rect(rect_x, rect_y, 10, 10))
+
+    # Draw robot's path using the real-world positions
+    if len(path_points) > 1:
+        transformed_path = [(x - robot.position[0] + robot_screen_x, y - robot.position[1] + robot_screen_y) for (x, y) in path_points]
+        pygame.draw.lines(screen, PATH_COLOR, False, transformed_path, 2)
 
     # Draw the robot at the center of the map area
     pygame.draw.circle(screen, ROBOT_COLOR, (robot_screen_x, robot_screen_y), robot.radius)

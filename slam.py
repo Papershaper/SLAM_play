@@ -4,14 +4,18 @@ import math
 class SLAM:
     def __init__(self, initial_grid_width, initial_grid_height):
         self.grid = np.zeros((initial_grid_width, initial_grid_height))
+        self.detection_count = np.zeros((initial_grid_width, initial_grid_height))  # Track how many times obstacles are detected
         self.width = initial_grid_width
         self.height = initial_grid_height
 
     def expand_grid(self, new_width, new_height):
         """Expands the SLAM grid when the robot explores beyond current bounds."""
         new_grid = np.zeros((new_width, new_height))
+        detection_count_new = np.zeros((new_width, new_height))  # Expand detection count as well
         new_grid[:self.grid.shape[0], :self.grid.shape[1]] = self.grid  # Copy old grid into new one
+        detection_count_new[:self.detection_count.shape[0], :self.detection_count.shape[1]] = self.detection_count  # Copy old detection counts
         self.grid = new_grid
+        self.detection_count = detection_count_new
         self.width, self.height = new_width, new_height
 
     def update(self, position, angle, sensor_data, max_sensor_range=200):
@@ -41,7 +45,15 @@ class SLAM:
         if sensor_data < max_sensor_range:
             obstacle_x = grid_x + int(sensor_data * np.cos(np.radians(angle)) / 10)
             obstacle_y = grid_y + int(sensor_data * np.sin(np.radians(angle)) / 10)
-            self.grid[obstacle_x, obstacle_y] = 2  # Mark as obstacle
+            
+            # Increment detection count for the detected obstacle
+            self.detection_count[obstacle_x, obstacle_y] += 1
+
+            # First detection (yellow) -> Confirmed detection (green)
+            if self.detection_count[obstacle_x, obstacle_y] == 1:
+                self.grid[obstacle_x, obstacle_y] = 2  # First detection
+            elif self.detection_count[obstacle_x, obstacle_y] >= 3:
+                self.grid[obstacle_x, obstacle_y] = 3  # Confirmed obstacle
 
     def get_map(self):
         return self.grid
