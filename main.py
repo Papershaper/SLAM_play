@@ -8,15 +8,16 @@ from slam import SLAM
 pygame.init()
 
 # Set up the display for a vertical aspect ratio (YouTube short format)
-SCREEN_WIDTH, SCREEN_HEIGHT = 720, 1280
+SCREEN_WIDTH, SCREEN_HEIGHT = 720, 900
 UI_HEIGHT = 150  # Height reserved for the UI telemetry at the top
 MAP_HEIGHT = SCREEN_HEIGHT - UI_HEIGHT  # The remaining height for the simulated map
 
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('SLAM Simulator')
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption('Simple SLAM Simulator')
 
-# Font for telemetry data
+# Font for telemetry data and other texts
 font = pygame.font.SysFont("Arial", 24)
+small_red_font = pygame.font.SysFont("Arial", 18)
 
 # Create robot and world objects
 robot = Robot([SCREEN_WIDTH // 2, UI_HEIGHT + MAP_HEIGHT // 2], 0)  # Start robot in the center of the map area
@@ -33,6 +34,7 @@ OBSTACLE_CONFIRMED_COLOR = (0, 255, 0)  # Green for confirmed obstacles
 FRONTIER_COLOR = (64, 64, 64)  # Dark grey for frontier
 ROBOT_COLOR = (0, 0, 255)  # Blue for robot
 PATH_COLOR = (255, 255, 255)  # White for path
+RED_TEXT_COLOR = (255, 0, 0)  # Red for the custom simulator text
 
 # Track robot path (real-world coordinates)
 path_points = []
@@ -43,7 +45,6 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
         # Exit on pressing the Escape key or 'Q'
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
@@ -61,14 +62,15 @@ while running:
 
     # Draw the UI section at the top
     pygame.draw.rect(screen, UI_BACKGROUND_COLOR, pygame.Rect(0, 0, SCREEN_WIDTH, UI_HEIGHT))
-    
-    # Add description about the ultrasonic sensor
-    sensor_text = font.render("Robot: 1 forward ultrasonic sensor", True, TEXT_COLOR)
-    screen.blit(sensor_text, (10, 10))
-    
-    # Display telemetry data in the UI section
+
+    # Text for Telemetry display and top UI
+    title_text = small_red_font.render("Totally Not Evit Robot Army - simple SLAM simulator", True, RED_TEXT_COLOR)
+    robot_text = font.render("Robot sensor: 1 forward ultrasonic sensor", True, TEXT_COLOR)
     telemetry_text = font.render(f"Angle: {robot.angle:.2f}° | Position: ({int(robot.position[0])}, {int(robot.position[1])})", True, TEXT_COLOR)
-    screen.blit(telemetry_text, (10, 50))
+    
+    screen.blit(title_text, (10,10))
+    screen.blit(robot_text, (10, 40))
+    screen.blit(telemetry_text, (10, 70))
 
     # Track robot's path (append to the path array)
     path_points.append((robot.position[0], robot.position[1]))
@@ -98,7 +100,10 @@ while running:
 
     # Draw robot's path using the real-world positions
     if len(path_points) > 1:
+        # Keep path static relative to the world, rather than shifting with the robot
         transformed_path = [(x - robot.position[0] + robot_screen_x, y - robot.position[1] + robot_screen_y) for (x, y) in path_points]
+        # Ensure the path does not draw in the telemetry area
+        transformed_path = [(x, y) for (x, y) in transformed_path if y > UI_HEIGHT]
         pygame.draw.lines(screen, PATH_COLOR, False, transformed_path, 2)
 
     # Draw the robot at the center of the map area
