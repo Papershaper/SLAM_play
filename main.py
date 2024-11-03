@@ -2,7 +2,7 @@ import pygame
 import math
 from robot import Robot
 from map import World
-from slam import SLAM
+from slam import GridBasedSLAM
 
 # Initialize pygame
 pygame.init()
@@ -22,7 +22,7 @@ small_red_font = pygame.font.SysFont("Arial", 18)
 # Create robot and world objects
 robot = Robot([SCREEN_WIDTH // 2, UI_HEIGHT + MAP_HEIGHT // 2], 0)  # Start robot in the center of the map area
 world = World()  # Define the world bounds
-slam = SLAM(80, 60)  # Start with 80x60 grid for the map
+slam = GridBasedSLAM(80, 60)  # Start with 80x60 grid for the map
 
 # Colors
 BACKGROUND_COLOR = (0, 0, 0)  # Black for map background
@@ -55,7 +55,7 @@ while running:
 
     # Get sensor data and update SLAM map
     sensor_data = robot.simulate_ultrasonic(world.obstacles)
-    slam.update(robot.position, robot.angle, sensor_data)
+    slam.sensor_update(robot.position, robot.angle, sensor_data)
 
     # Clear the screen with background color
     screen.fill(BACKGROUND_COLOR)
